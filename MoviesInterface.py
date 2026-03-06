@@ -1,34 +1,85 @@
-# name: YOUR NAME HERE
+# name: Louie Bloomberg
 # date:
 # description: Implementation of CRUD operations with DynamoDB — CS178 Lab 10
 # proposed score: 0 (out of 5) -- if I don't change this, I agree to get 0 points.
 
 import boto3
 
-# boto3 uses the credentials configured via `aws configure` on EC2
 dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('Movies')
 
 def create_movie():
-    """
-    Prompt user for a Movie Title.
-    Add the movie to the database with the title and an empty Ratings list.
-    """
-    print("creating a movie")
+    movieTitle = input("Please enter a movie title: ")
+
+
+    table.put_item(
+        Item={
+            "Title": movieTitle,
+            "Ratings": []
+        }
+    )
+
+
+def print_movie(movie):
+    """Print a single movie's details in a readable format."""
+    title = movie.get("Title", "Unknown Title")
+    year = movie.get("Year", "Unknown Year")
+    ratings = movie.get("Ratings", "No ratings")
+    genres = movie.get("Genre", "No genres")
+    runtime = movie.get("Runtime (min)", "Unknown Runtime")
+
+    # Ratings is a nested map in the table — handle it gracefully
+    # ratings = movie.get("Ratings", {})
+    # rating_str = ", ".join(f"{k}: {v}" for k, v in ratings.items()) if ratings else "No ratings"
+
+    print(f"  Title : {title}")
+    print(f"  Year  : {year}")
+    print(f"  Ratings: {ratings}")
+    print(f"  Genres: {genres}")
+    print(f"  Runtime: {runtime} min")
+    print(f"                ")
+
 
 def print_all_movies():
-    """
-    Display all movies in the database.
-    """
-    print("display all movies")
+    """Scan the entire Movies table and print each item."""
+
+
+    # scan() retrieves ALL items in the table.
+    # For large tables you'd use query() instead — but for our small
+    # dataset, scan() is fine.
+    response = table.scan()
+    items = response.get("Items", [])
+
+    if not items:
+        print("No movies found. Make sure your DynamoDB table has data.")
+        return
+
+    print(f"Found {len(items)} movie(s):\n")
+    for movie in items:
+        print_movie(movie)
+
 
 def update_rating():
-    """
-    Prompt user for a Movie Title.
-    Prompt user for a rating (integer).
-    Append the rating to the movie's Ratings list in the database.
-    """
-    print("updating rating")
+    title = input("What is the movie title? ")
+    rating = int(input("What is the rating (integer): "))
+
+    try:
+        response = table.get_item(Key={"Title": title})
+        item = response.get("Item")
+        if not item:
+            print(f"Error in updating movie rating")
+            return
+    except Exception as e:
+        print(f"Error in updating movie rating.")
+        return
+
+    table.update_item(
+        Key={"Title": title},
+        UpdateExpression="SET Ratings = list_append(Ratings, :r)",
+        ExpressionAttributeValues={':r': [rating]}
+    )
+
+
 
 def delete_movie():
     """
