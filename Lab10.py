@@ -70,7 +70,8 @@ def update_album():
 
     table.update_item(
         Key={"Song": song},
-        UpdateExpression="SET Album(s) = list_append(Album(s), :a)",
+        UpdateExpression="SET #albums = list_append(#albums, :a)",
+        ExpressionAttributeNames={"#albums": "Album(s)"},
         ExpressionAttributeValues={':a': [album]}
     )
 
