@@ -9,12 +9,12 @@ dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
 table = dynamodb.Table('Movies')
 
 def create_movie():
-    movieTitle = input("Please enter a movie title: ")
+    title = input("Please enter a movie title: ")
 
 
     table.put_item(
         Item={
-            "Title": movieTitle,
+            "Title": title,
             "Ratings": []
         }
     )
@@ -60,8 +60,8 @@ def print_all_movies():
 
 
 def update_rating():
-    title = input("What is the movie title? ")
-    rating = int(input("What is the rating (integer): "))
+    title = input("Please enter a movie title: ")
+    rating = int(input("Please enter the rating (out of 100) as an integer: "))
 
     try:
         response = table.get_item(Key={"Title": title})
@@ -82,7 +82,7 @@ def update_rating():
 
 
 def delete_movie():
-    title = input("What is the movie title? ")
+    title = input("Please enter a movie title: ")
     table.delete_item(
         Key={
             "Title": title
@@ -90,11 +90,28 @@ def delete_movie():
     )
 
 def query_movie():
-    """
-    Prompt user for a Movie Title.
-    Print out the average of all ratings in the movie's Ratings list.
-    """
-    print("query movie")
+    title = input("Please enter a movie title: ")
+    response = table.get_item(
+        Key={
+            "Title": title
+        }
+    )
+    movie = response.get("Item")
+
+    ratings_list = movie["Ratings"]
+
+    if movie == "None":
+        print("Movie not found.")
+        return
+
+    if not ratings_list:
+        print("Movie has no ratings.")
+        return
+
+    average_rating = sum(ratings_list) / len(ratings_list)
+    print(f"Average rating for '{title}' is ", average_rating, " out of 100.")
+
+
 
 def print_menu():
     print("----------------------------")
